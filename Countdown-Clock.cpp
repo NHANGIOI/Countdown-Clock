@@ -76,13 +76,13 @@ void tab(sf::RenderWindow &windows,sf::Event &event){
                 float y = sf::Mouse::getPosition(tab_setting).y;
                 std::cout << x << " " << y << std::endl;
 
-                if(25.f <= x && x <= 125.f && 11.f <= y && y <= 63.f){ //(25,125) / (11,63) (Button fps 35)
+                if(25.f <= x && x <= 150.f && 11.f <= y && y <= 63.f){ //(25,125) / (11,63) (Button fps 35)
                     Frame_limit = 35;
                 }
-                if(25.f <= x && x <= 125.f && 73.f <= y && y <= 125.f){ //(25,125) / (73,125)
+                if(25.f <= x && x <= 150.f && 73.f <= y && y <= 125.f){ //(25,125) / (73,125)
                     Frame_limit = 60;
                 }
-                if(25.f <= x && x <= 125.f && 135.f <= y && y <= 187.f){ // (25,125) / (135,187)
+                if(25.f <= x && x <= 150.f && 135.f <= y && y <= 187.f){ // (25,125) / (135,187)
                     Frame_limit = 0;
                 }
             }
