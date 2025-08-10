@@ -1,4 +1,5 @@
-#include<bits/stdc++.h>
+#include<iostream>
+#include<cmath>
 #include <SFML/Graphics.hpp>
 
 int Frame_limit = 0;
@@ -106,7 +107,7 @@ namespace see_digit{
 void draw(int min,int sec,sf::RenderWindow &windows){
     draw_reg(sf::Vector2f(537.5,100),sf::Vector2f(175,65),sf::Color::Black,windows);
     draw_reg(sf::Vector2(543.75f,106.25f),sf::Vector2f(162.5f,52.5f),sf::Color(105,105,105),windows);
-    draw_text(std::to_string(min) + ":" + std::to_string(sec)
+    draw_text((min < 10 ? "0" : "") + std::to_string(min) + ":" + (sec < 10 ? "0" : "") + std::to_string(sec)
     ,Consolas,45,sf::Vector2f(561.f,102.5f),sf::Color::Red,windows);
 }
 }
@@ -123,18 +124,69 @@ bool check_limit_plus(float x,float y){
     if(x < 704.f || x > 724.f || y < 227.f || y > 249.f)    return false;
     return true;
 }
-void draw(int mask,sf::RenderWindow &windows){
+void draw(int &mask,sf::Clock &root_time,sf::Time checkpoint_time,sf::RenderWindow &windows){
     //draw minus button
-    draw_line(sf::Vector2f(525.f,237.f),sf::Vector2f(548.f,237.f),4.f,(mask == 1 ? sf::Color(0,128,0) : sf::Color::Black),windows);
+    if(mask == 1){
+        draw_line(sf::Vector2f(525.f,237.f),sf::Vector2f(548.f,237.f),4.f,sf::Color(0,128,0),windows);
+        int delta = (root_time.getElapsedTime() - checkpoint_time).asMilliseconds();
+        if(delta >= 500)   mask = 0;
+    }
+    else{
+        draw_line(sf::Vector2f(525.f,237.f),sf::Vector2f(548.f,237.f),4.f,sf::Color::Black,windows);
+    }
     //draw plus button
-    draw_text("+",Consolas,50,sf::Vector2f(700,200),(mask == 2 ? sf::Color(0,128,0) : sf::Color::Black),windows);
+    if(mask == 2){
+        draw_text("+",Consolas,50,sf::Vector2f(700,200),sf::Color(0,128,0),windows);
+        int delta = (root_time.getElapsedTime() - checkpoint_time).asMilliseconds();
+        if(delta >= 500)   mask = 0;
+    }
+    else{
+        draw_text("+",Consolas,50,sf::Vector2f(700,200),sf::Color::Black,windows);
+    }
     //write "sec"
     draw_text("sec",Consolas,50,sf::Vector2f(585,200),sf::Color::Black,windows);
+}
+}
+namespace Control_min_button{
+bool check_limit_minus(float x,float y){
+    // x : 526 - 546
+    // y : 303 - 322
+    if(x < 525.f || x > 546.f || y < 303.f || y > 322.f)    return false;
+    return true;
+}
+bool check_limit_plus(float x,float y){
+    // x : 702 - 722
+    // y : 301 - 324
+    if(x < 704.f || x > 724.f || y < 301.f || y > 324.f)    return false;
+    return true;
+}
+void draw(int &mask,sf::Clock &root_time,sf::Time checkpoint_time,sf::RenderWindow &windows){
+    //draw minus button
+    if(mask == 1){
+        draw_line(sf::Vector2f(525.f,312.f),sf::Vector2f(548.f,312.f),4.f,sf::Color(0,128,0),windows);
+        int delta = (root_time.getElapsedTime() - checkpoint_time).asMilliseconds();
+        if(delta >= 500)   mask = 0;
+    }
+    else{
+        draw_line(sf::Vector2f(525.f,312.f),sf::Vector2f(548.f,312.f),4.f,sf::Color::Black,windows);
+    }
+    //draw plus button
+    if(mask == 2){
+        draw_text("+",Consolas,50,sf::Vector2f(700,275),sf::Color(0,128,0),windows);
+        int delta = (root_time.getElapsedTime() - checkpoint_time).asMilliseconds();
+        if(delta >= 500)   mask = 0;
+    }
+    else{
+        draw_text("+",Consolas,50,sf::Vector2f(700,275),sf::Color::Black,windows);
+    }
+    //write "min"
+    draw_text("min",Consolas,50,sf::Vector2f(585,275),sf::Color::Black,windows);
 }
 }
 int n,m;
 signed main()
 {
+    sf::Clock root_time;
     n = sf::VideoMode::getDesktopMode().width / 2;
     m = sf::VideoMode::getDesktopMode().height / 2;
     sf::RenderWindow windows(sf::VideoMode(n,m),"MyTab");
@@ -145,13 +197,16 @@ signed main()
     }
 
     std::cout << n << " " << m << std::endl;
-    int min = 10;
-    int sec = 60;
+    int min = 0;
+    int sec = 0;
+
+    int mask_button_in_sec = 0;
+    int mask_button_in_min = 0;
+    sf::Time checkpoint_time = root_time.getElapsedTime();
+    
     while(windows.isOpen()){
         if(Frame_limit == 0)    windows.setVerticalSyncEnabled(true);
         else    windows.setFramerateLimit(Frame_limit);
-
-        int mask_button_in_sec = 0;
 
         sf::Event event;
         while(windows.pollEvent(event)){
@@ -163,10 +218,25 @@ signed main()
                 if(setting::check_limit(x,y))  setting::tab(windows,event);
 
                 if(Control_sec_button::check_limit_minus(x,y)){
+                    checkpoint_time = root_time.getElapsedTime();
                     mask_button_in_sec = 1;
+                    sec = (sec - 1 + 60) % 60;
                 }
                 else if(Control_sec_button::check_limit_plus(x,y)){
+                    checkpoint_time = root_time.getElapsedTime();
                     mask_button_in_sec = 2;
+                    sec = (sec + 1) % 60;
+                }
+
+                if(Control_min_button::check_limit_minus(x,y)){
+                    checkpoint_time = root_time.getElapsedTime();
+                    mask_button_in_min = 1;
+                    min = (min - 1 + 60) % 60;
+                }
+                else if(Control_min_button::check_limit_plus(x,y)){
+                    checkpoint_time = root_time.getElapsedTime();
+                    mask_button_in_min = 2;   
+                    min = (min + 1) % 60;
                 }
             }
         }
@@ -179,7 +249,8 @@ signed main()
         draw_line(sf::Vector2f(225.f,225.f),sf::Vector2f(225.f,100.f),20,sf::Color::Black,windows);
         setting::logo(windows,event);
         see_digit::draw(min,sec,windows);
-        Control_sec_button::draw(mask_button_in_sec,windows);
+        Control_sec_button::draw(mask_button_in_sec,root_time,checkpoint_time,windows);
+        Control_min_button::draw(mask_button_in_min,root_time,checkpoint_time,windows);
 
         windows.display();
     }
