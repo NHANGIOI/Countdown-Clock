@@ -2,6 +2,8 @@
 #include <SFML/Graphics.hpp>
 
 int Frame_limit = 0;
+sf::Font Consolas;
+
 void draw_circle(sf::Vector2f pos,float R,sf::Color color_code,int Point_Count,sf::RenderWindow &x){
     sf::CircleShape cir;
     cir.setPointCount(Point_Count);
@@ -41,6 +43,10 @@ void draw_text(std::string vanban,sf::Font &FontU,int sz,sf::Vector2f pos,sf::Co
     windows.draw(tx);
 }
 namespace setting{
+bool check_limit(float x,float y){
+    if(x < 735.f || x > 785.f || y < 15.f || y > 65.f)  return false;
+    return true;
+}
 void logo(sf::RenderWindow &windows,sf::Event &event){
     sf::Texture pic;
     if(pic.loadFromFile("logo_setting.png") == false){
@@ -54,11 +60,6 @@ void logo(sf::RenderWindow &windows,sf::Event &event){
 }
 void tab(sf::RenderWindow &windows,sf::Event &event){
     sf::RenderWindow tab_setting(sf::VideoMode(350,200),"Setting");
-
-    sf::Font Consolas;//thêm font chữ consolas(regular)
-    if(Consolas.loadFromFile("Consolas-Regular.ttf") == false){
-        exit(-1);
-    }
     
     while(tab_setting.isOpen()){
         if(Frame_limit == 0)    tab_setting.setVerticalSyncEnabled(true);
@@ -101,19 +102,56 @@ void tab(sf::RenderWindow &windows,sf::Event &event){
     }
 }
 }
+namespace see_digit{
+void draw(int min,int sec,sf::RenderWindow &windows){
+    draw_reg(sf::Vector2f(537.5,100),sf::Vector2f(175,65),sf::Color::Black,windows);
+    draw_reg(sf::Vector2(543.75f,106.25f),sf::Vector2f(162.5f,52.5f),sf::Color(105,105,105),windows);
+    draw_text(std::to_string(min) + ":" + std::to_string(sec)
+    ,Consolas,45,sf::Vector2f(561.f,102.5f),sf::Color::Red,windows);
+}
+}
+namespace Control_sec_button{
+bool check_limit_minus(float x,float y){
+    // x : 525 - 546
+    // y : 229 - 247
+    if(x < 525.f || x > 546.f || y < 229.f || y > 247.f)    return false;
+    return true;
+}
+bool check_limit_plus(float x,float y){
+    // x : 704 - 724
+    // y : 227 - 249
+    if(x < 704.f || x > 724.f || y < 227.f || y > 249.f)    return false;
+    return true;
+}
+void draw(int mask,sf::RenderWindow &windows){
+    //draw minus button
+    draw_line(sf::Vector2f(525.f,237.f),sf::Vector2f(548.f,237.f),4.f,(mask == 1 ? sf::Color(0,128,0) : sf::Color::Black),windows);
+    //draw plus button
+    draw_text("+",Consolas,50,sf::Vector2f(700,200),(mask == 2 ? sf::Color(0,128,0) : sf::Color::Black),windows);
+    //write "sec"
+    draw_text("sec",Consolas,50,sf::Vector2f(585,200),sf::Color::Black,windows);
+}
+}
 int n,m;
 signed main()
 {
     n = sf::VideoMode::getDesktopMode().width / 2;
     m = sf::VideoMode::getDesktopMode().height / 2;
     sf::RenderWindow windows(sf::VideoMode(n,m),"MyTab");
-    
+
+    //thêm font chữ consolas(regular)
+    if(Consolas.loadFromFile("Consolas-Regular.ttf") == false){
+        exit(-1);
+    }
 
     std::cout << n << " " << m << std::endl;
-    
+    int min = 10;
+    int sec = 60;
     while(windows.isOpen()){
         if(Frame_limit == 0)    windows.setVerticalSyncEnabled(true);
         else    windows.setFramerateLimit(Frame_limit);
+
+        int mask_button_in_sec = 0;
 
         sf::Event event;
         while(windows.pollEvent(event)){
@@ -122,7 +160,14 @@ signed main()
                 float x = sf::Mouse::getPosition(windows).x;
                 float y = sf::Mouse::getPosition(windows).y;
                 std::cout << x << " " << y << std::endl;
-                if(735.f <= x && x <= 785.f && 15.f <= y && y <= 65.f)  setting::tab(windows,event);
+                if(setting::check_limit(x,y))  setting::tab(windows,event);
+
+                if(Control_sec_button::check_limit_minus(x,y)){
+                    mask_button_in_sec = 1;
+                }
+                else if(Control_sec_button::check_limit_plus(x,y)){
+                    mask_button_in_sec = 2;
+                }
             }
         }
         windows.clear(sf::Color::Black);
@@ -133,6 +178,8 @@ signed main()
         draw_line(sf::Vector2f(225.f,225.f),sf::Vector2f(225.f,60.f),10.0,sf::Color::Red,windows);
         draw_line(sf::Vector2f(225.f,225.f),sf::Vector2f(225.f,100.f),20,sf::Color::Black,windows);
         setting::logo(windows,event);
+        see_digit::draw(min,sec,windows);
+        Control_sec_button::draw(mask_button_in_sec,windows);
 
         windows.display();
     }
