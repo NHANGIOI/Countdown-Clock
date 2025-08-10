@@ -1,7 +1,7 @@
 #include<iostream>
 #include<cmath>
 #include <SFML/Graphics.hpp>
-
+const float PI = 3.141592653589793f;
 int Frame_limit = 0;
 sf::Font Consolas;
 
@@ -48,7 +48,7 @@ bool check_limit(float x,float y){
     if(x < 735.f || x > 785.f || y < 15.f || y > 65.f)  return false;
     return true;
 }
-void logo(sf::RenderWindow &windows,sf::Event &event){
+void logo(sf::RenderWindow &windows){
     sf::Texture pic;
     if(pic.loadFromFile("logo_setting.png") == false){
         exit(-1);
@@ -76,7 +76,7 @@ void tab(sf::RenderWindow &windows,sf::Event &event){
             if(event_in_tab.type == sf::Event::MouseButtonPressed){
                 float x = sf::Mouse::getPosition(tab_setting).x;
                 float y = sf::Mouse::getPosition(tab_setting).y;
-                std::cout << x << " " << y << std::endl;
+                //std::cout << x << " " << y << std::endl;
 
                 if(25.f <= x && x <= 150.f && 11.f <= y && y <= 63.f){ //(25,125) / (11,63) (Button fps 35)
                     Frame_limit = 35;
@@ -104,10 +104,20 @@ void tab(sf::RenderWindow &windows,sf::Event &event){
 }
 }
 namespace see_digit{
-void draw(int min,int sec,sf::RenderWindow &windows){
+void draw(bool running,int sec,int min,int remain_time,sf::RenderWindow &windows){
+    int remain_min,remain_sec;
+
+    if(running == true){
+        remain_min = remain_time / 60;
+        remain_sec = remain_time % 60;
+    }
+    else{
+        remain_min = min;
+        remain_sec = sec;
+    }
     draw_reg(sf::Vector2f(537.5,100),sf::Vector2f(175,65),sf::Color::Black,windows);
     draw_reg(sf::Vector2(543.75f,106.25f),sf::Vector2f(162.5f,52.5f),sf::Color(105,105,105),windows);
-    draw_text((min < 10 ? "0" : "") + std::to_string(min) + ":" + (sec < 10 ? "0" : "") + std::to_string(sec)
+    draw_text((remain_min < 10 ? "0" : "") + std::to_string(remain_min) + ":" + (remain_sec < 10 ? "0" : "") + std::to_string(remain_sec)
     ,Consolas,45,sf::Vector2f(561.f,102.5f),sf::Color::Red,windows);
 }
 }
@@ -183,27 +193,97 @@ void draw(int &mask,sf::Clock &root_time,sf::Time checkpoint_time,sf::RenderWind
     draw_text("min",Consolas,50,sf::Vector2f(585,275),sf::Color::Black,windows);
 }
 }
+namespace start_button{
+bool check_limit_button(float x,float y){
+    // x : 490 - 760
+    //y : 375 - 400
+    if(x < 490.f || x > 760.f || y < 375.f || y > 400.f)    return false;
+    return true;
+}
+void draw(bool running,int total_time,int remain_time,sf::RenderWindow &windows){
+    if(running == true){
+        float d = (270.0/total_time) * (float)remain_time;
+        draw_reg(sf::Vector2f(490,375),sf::Vector2f(d,25),sf::Color(105,105,105),windows);
+        draw_text("Running",Consolas,27,sf::Vector2f(577.5f,367),sf::Color::Red,windows);
+    }
+    else{
+        draw_reg(sf::Vector2f(490,375),sf::Vector2f(270,25),sf::Color(105,105,105),windows);
+        draw_text("Start",Consolas,27,sf::Vector2f(589,368.5f),sf::Color::Red,windows);
+    }
+}
+}
+namespace reset_button{
+bool check_limit_button(float x,float y){
+    //x : 730 - 768
+    //y : 114 - 152
+    if(x < 730.f || x > 768.f || y < 114.f || y > 152.f)    return false;
+    return true;
+}
+void draw(bool running,sf::RenderWindow &windows){
+    if(running == false)    return;
+
+    sf::Texture pic;
+    if(pic.loadFromFile("logo_reset.png") == false){
+        exit(-1);
+    }
+    sf::Sprite sp;
+    sp.setTexture(pic);
+    sp.setScale(0.1,0.1);
+    sp.setPosition(sf::Vector2f(725.f,108.f));
+    windows.draw(sp);
+}
+}
+namespace main_clock{
+void draw(bool running,int sec,int min,int remain_time,sf::RenderWindow &windows){
+    int remain_min = 0,remain_sec = 0;
+    if(running == true){
+        remain_min = remain_time / 60;
+        remain_sec = remain_time % 60;
+    }
+    else{
+        remain_min = min;
+        remain_sec = sec;
+    }
+    float x0 = 225.f;
+    float y0 = 225.f;
+    float alpha = (float)(2.f * PI / 60.f) * (float)remain_sec;
+    float x = x0 + std::sin(alpha) * 165.f;
+    float y = y0 - std::cos(alpha) * 165.f;
+    draw_line(sf::Vector2f(x0,y0),sf::Vector2f(x,y),10.0,sf::Color::Red,windows);
+    draw_circle(sf::Vector2f(x - 5,y - 5),5,sf::Color::Black,2000,windows);
+
+    alpha = (float)(2.f * PI / 60.f) * (float)remain_min;
+    x = x0 + std::sin(alpha) * 125.f;
+    y = y0 - std::cos(alpha) * 125.f;
+    draw_line(sf::Vector2f(x0,y0),sf::Vector2f(x,y),20,sf::Color::Black,windows);
+    draw_circle(sf::Vector2f(x - 10,y - 10),10,sf::Color::Black,2000,windows);
+
+    draw_circle(sf::Vector2f(215.f,215.f),10,sf::Color(30,144,255),2000,windows);
+}
+}
 int n,m;
 signed main()
 {
     sf::Clock root_time;
-    n = sf::VideoMode::getDesktopMode().width / 2;
-    m = sf::VideoMode::getDesktopMode().height / 2;
-    sf::RenderWindow windows(sf::VideoMode(n,m),"MyTab");
+    n = 800;
+    m = 450;
+    sf::RenderWindow windows(sf::VideoMode(n,m),"Countdown-Clock (ver 1.0)");
 
     //thêm font chữ consolas(regular)
     if(Consolas.loadFromFile("Consolas-Regular.ttf") == false){
         exit(-1);
     }
 
-    std::cout << n << " " << m << std::endl;
     int min = 0;
     int sec = 0;
 
     int mask_button_in_sec = 0;
     int mask_button_in_min = 0;
-    sf::Time checkpoint_time = root_time.getElapsedTime();
-    
+    sf::Time checkpoint_time_sec = root_time.getElapsedTime();
+    sf::Time checkpoint_time_min = root_time.getElapsedTime();
+    sf::Time start;
+    bool running = false;
+
     while(windows.isOpen()){
         if(Frame_limit == 0)    windows.setVerticalSyncEnabled(true);
         else    windows.setFramerateLimit(Frame_limit);
@@ -214,43 +294,59 @@ signed main()
             if(event.type == sf::Event::MouseButtonPressed){
                 float x = sf::Mouse::getPosition(windows).x;
                 float y = sf::Mouse::getPosition(windows).y;
-                std::cout << x << " " << y << std::endl;
+                //std::cout << x << " " << y << std::endl;
                 if(setting::check_limit(x,y))  setting::tab(windows,event);
 
                 if(Control_sec_button::check_limit_minus(x,y)){
-                    checkpoint_time = root_time.getElapsedTime();
+                    checkpoint_time_sec = root_time.getElapsedTime();
                     mask_button_in_sec = 1;
                     sec = (sec - 1 + 60) % 60;
                 }
                 else if(Control_sec_button::check_limit_plus(x,y)){
-                    checkpoint_time = root_time.getElapsedTime();
+                    checkpoint_time_sec = root_time.getElapsedTime();
                     mask_button_in_sec = 2;
                     sec = (sec + 1) % 60;
                 }
 
                 if(Control_min_button::check_limit_minus(x,y)){
-                    checkpoint_time = root_time.getElapsedTime();
+                    checkpoint_time_min = root_time.getElapsedTime();
                     mask_button_in_min = 1;
                     min = (min - 1 + 60) % 60;
                 }
                 else if(Control_min_button::check_limit_plus(x,y)){
-                    checkpoint_time = root_time.getElapsedTime();
+                    checkpoint_time_min = root_time.getElapsedTime();
                     mask_button_in_min = 2;   
                     min = (min + 1) % 60;
+                }
+                if(start_button::check_limit_button(x,y) && running == false){
+                    running = true;
+                    start = root_time.getElapsedTime();
+                }
+                if(reset_button::check_limit_button(x,y) && running == true){
+                    running = false;
                 }
             }
         }
         windows.clear(sf::Color::Black);
-        
+
+        int total_time = min * 60 + sec;
+        int remain_time = std::max(0,(int)(total_time - (root_time.getElapsedTime() - start).asSeconds()));
+
         draw_circle(sf::Vector2f(25.f,25.f),200.f,sf::Color(105,105,105),2000,windows);// vẽ hình tròn lớn
         draw_circle(sf::Vector2f(50.f,50.f),175.f,sf::Color::White,2000,windows);// vẽ hình tròn nhỏ
         draw_reg(sf::Vector2f(450.f,0.f),sf::Vector2f(350.f,450.f),sf::Color::White,windows);// vẽ hình chữ nhật bên phải
-        draw_line(sf::Vector2f(225.f,225.f),sf::Vector2f(225.f,60.f),10.0,sf::Color::Red,windows);
-        draw_line(sf::Vector2f(225.f,225.f),sf::Vector2f(225.f,100.f),20,sf::Color::Black,windows);
-        setting::logo(windows,event);
-        see_digit::draw(min,sec,windows);
-        Control_sec_button::draw(mask_button_in_sec,root_time,checkpoint_time,windows);
-        Control_min_button::draw(mask_button_in_min,root_time,checkpoint_time,windows);
+
+        see_digit::draw(running,sec,min,remain_time,windows);
+        reset_button::draw(running,windows);
+        Control_sec_button::draw(mask_button_in_sec,root_time,checkpoint_time_sec,windows);
+        Control_min_button::draw(mask_button_in_min,root_time,checkpoint_time_min,windows);
+
+        draw_reg(sf::Vector2f(480,365),sf::Vector2f(290,45),sf::Color::Black,windows);
+        draw_reg(sf::Vector2f(490,375),sf::Vector2f(270,25),sf::Color::White,windows);
+        start_button::draw(running,total_time,remain_time,windows);
+
+        main_clock::draw(running,sec,min,remain_time,windows);
+        setting::logo(windows);
 
         windows.display();
     }
