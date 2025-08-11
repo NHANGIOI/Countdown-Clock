@@ -279,7 +279,7 @@ signed main()
 
     //thêm sound clocktick
     sf::SoundBuffer clocktick_buffer;
-    if(clocktick_buffer.loadFromFile("ClockTick_effect1.mp3") == false)   exit(-1);
+    if(clocktick_buffer.loadFromFile("ClockTick_effect.mp3") == false)   exit(-1);
     sf::Sound clocktick_sound;
     clocktick_sound.setBuffer(clocktick_buffer);
     
