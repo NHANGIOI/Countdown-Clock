@@ -1,6 +1,7 @@
 #include<iostream>
 #include<cmath>
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 const float PI = 3.141592653589793f;
 int Frame_limit = 0;
 sf::Font Consolas;
@@ -48,11 +49,7 @@ bool check_limit(float x,float y){
     if(x < 735.f || x > 785.f || y < 15.f || y > 65.f)  return false;
     return true;
 }
-void logo(sf::RenderWindow &windows){
-    sf::Texture pic;
-    if(pic.loadFromFile("logo_setting.png") == false){
-        exit(-1);
-    }
+void logo(sf::Texture pic,sf::RenderWindow &windows){
     sf::Sprite sp;
     sp.setTexture(pic);
     sp.setScale(0.1,0.1);
@@ -261,6 +258,14 @@ void draw(bool running,int sec,int min,int remain_time,sf::RenderWindow &windows
     draw_circle(sf::Vector2f(215.f,215.f),10,sf::Color(30,144,255),2000,windows);
 }
 }
+namespace sound{
+void play_clocktick(){
+
+}
+void play_clockover(){
+
+}
+}
 int n,m;
 signed main()
 {
@@ -268,12 +273,25 @@ signed main()
     n = 800;
     m = 450;
     sf::RenderWindow windows(sf::VideoMode(n,m),"Countdown-Clock (ver 1.0)");
+    //thêm ảnh icon setting
+    sf::Texture setting_icon;
+    if(setting_icon.loadFromFile("logo_setting.png") == false)  exit(-1);
+
+    //thêm sound clocktick
+    sf::SoundBuffer clocktick_buffer;
+    if(clocktick_buffer.loadFromFile("ClockTick_effect1.mp3") == false)   exit(-1);
+    sf::Sound clocktick_sound;
+    clocktick_sound.setBuffer(clocktick_buffer);
+    
+    //thêm sound clockover
+    sf::SoundBuffer clockover_buffer;
+    if(clockover_buffer.loadFromFile("TimeOver_effect.mp3") == false)   exit(-1);
+    sf::Sound clockover_sound;
+    clockover_sound.setBuffer(clockover_buffer);
 
     //thêm font chữ consolas(regular)
-    if(Consolas.loadFromFile("Consolas-Regular.ttf") == false){
-        exit(-1);
-    }
-
+    if(Consolas.loadFromFile("Consolas-Regular.ttf") == false)  exit(-1);
+    
     int min = 0;
     int sec = 0;
 
@@ -297,23 +315,23 @@ signed main()
                 //std::cout << x << " " << y << std::endl;
                 if(setting::check_limit(x,y))  setting::tab(windows,event);
 
-                if(Control_sec_button::check_limit_minus(x,y)){
+                if(Control_sec_button::check_limit_minus(x,y) && running == false){
                     checkpoint_time_sec = root_time.getElapsedTime();
                     mask_button_in_sec = 1;
                     sec = (sec - 1 + 60) % 60;
                 }
-                else if(Control_sec_button::check_limit_plus(x,y)){
+                else if(Control_sec_button::check_limit_plus(x,y) && running == false){
                     checkpoint_time_sec = root_time.getElapsedTime();
                     mask_button_in_sec = 2;
                     sec = (sec + 1) % 60;
                 }
 
-                if(Control_min_button::check_limit_minus(x,y)){
+                if(Control_min_button::check_limit_minus(x,y) && running == false){
                     checkpoint_time_min = root_time.getElapsedTime();
                     mask_button_in_min = 1;
                     min = (min - 1 + 60) % 60;
                 }
-                else if(Control_min_button::check_limit_plus(x,y)){
+                else if(Control_min_button::check_limit_plus(x,y) && running == false){
                     checkpoint_time_min = root_time.getElapsedTime();
                     mask_button_in_min = 2;   
                     min = (min + 1) % 60;
@@ -327,10 +345,25 @@ signed main()
                 }
             }
         }
-        windows.clear(sf::Color::Black);
-
         int total_time = min * 60 + sec;
         int remain_time = std::max(0,(int)(total_time - (root_time.getElapsedTime() - start).asSeconds()));
+
+        if(running == true){
+            int delta = (root_time.getElapsedTime() - start).asSeconds();
+            if(remain_time != 0){
+                if(clocktick_sound.getStatus() == sf::SoundSource::Stopped)  clocktick_sound.play();
+            }
+            else{
+                if(clocktick_sound.getStatus() == sf::SoundSource::Playing) clocktick_sound.stop();
+                if(clockover_sound.getStatus() == sf::SoundSource::Stopped) clockover_sound.play();
+            }
+        }
+        else{
+            if(clockover_sound.getStatus() == sf::SoundSource::Playing)    clockover_sound.stop();
+            if(clocktick_sound.getStatus() == sf::SoundSource::Playing) clocktick_sound.stop();
+        }
+
+        windows.clear(sf::Color::Black);
 
         draw_circle(sf::Vector2f(25.f,25.f),200.f,sf::Color(105,105,105),2000,windows);// vẽ hình tròn lớn
         draw_circle(sf::Vector2f(50.f,50.f),175.f,sf::Color::White,2000,windows);// vẽ hình tròn nhỏ
@@ -346,7 +379,7 @@ signed main()
         start_button::draw(running,total_time,remain_time,windows);
 
         main_clock::draw(running,sec,min,remain_time,windows);
-        setting::logo(windows);
+        setting::logo(setting_icon,windows);
 
         windows.display();
     }
