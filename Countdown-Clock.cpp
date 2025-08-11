@@ -258,14 +258,6 @@ void draw(bool running,int sec,int min,int remain_time,sf::RenderWindow &windows
     draw_circle(sf::Vector2f(215.f,215.f),10,sf::Color(30,144,255),2000,windows);
 }
 }
-namespace sound{
-void play_clocktick(){
-
-}
-void play_clockover(){
-
-}
-}
 int n,m;
 signed main()
 {
